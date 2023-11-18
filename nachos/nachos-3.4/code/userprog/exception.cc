@@ -26,7 +26,7 @@
 #include "syscall.h"
 #include "machine.h"
 #include "console.h"
-#include "synchcons.h"
+// #include "synchcons.h"
 
 #include <iostream>
 
@@ -189,6 +189,11 @@ ExceptionHandler(ExceptionType which)
 				case SC_ReadInt:{
 					printf("Read Int Function\n");
 					// Handle this method here
+					// char* buffer = new char[4];
+					// gSynchConsole->Read(buffer,3);
+					// buffer[3] = '\0';
+					// gSynchConsole->Write(buffer,256);
+					// int n = scanf("%s\n", );("%d",)
 					break;
 				}
 				case SC_PrintInt:{
@@ -240,8 +245,6 @@ ExceptionHandler(ExceptionType which)
 				default:{
 					break;
 				}
-
-
 			}
 			IncreatePC();
 		}
