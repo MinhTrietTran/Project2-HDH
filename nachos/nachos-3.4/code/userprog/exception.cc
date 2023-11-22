@@ -29,7 +29,8 @@
 // #include "synchcons.h"
 
 #include <iostream>
-
+#define MaxFileLength 32
+#define MaxBufferSize 255
 
 // additional
 
@@ -180,6 +181,46 @@ ExceptionHandler(ExceptionType which)
 				return;
 		case SyscallException:{
 			switch(type){
+				case SC_Create:
+				{
+					int virtAddr;
+					char* filename;
+					DEBUG('a',"\n SC_Create call ...");
+					DEBUG('a',"\n Reading virtual address of filename");
+					// Lấy tham số tên tập tin từ thanh ghi r4
+					virtAddr = machine->ReadRegister(4);
+					DEBUG ('a',"\n Reading filename.");
+					// MaxFileLength là = 32
+					filename = User2System(virtAddr,MaxFileLength+1);
+					if (filename == NULL)
+					{
+						printf("\n Not enough memory in system");
+						DEBUG('a',"\n Not enough memory in system");
+						machine->WriteRegister(2,-1); // trả về lỗi cho chương
+						// trình người dùng
+						delete filename;
+						break;
+					}
+					DEBUG('a',"\n Finish reading filename.");
+					//DEBUG(‘a’,"\n File name : '"<<filename<<"'");
+					// Create file with size = 0
+					// Dùng đối tượng fileSystem của lớp OpenFile để tạo file,
+					// việc tạo file này là sử dụng các thủ tục tạo file của hệ điều
+					// hành Linux, chúng ta không quản ly trực tiếp các block trên
+					// đĩa cứng cấp phát cho file, việc quản ly các block của file
+					// trên ổ đĩa là một đồ án khác
+					if (!fileSystem->Create(filename,0))
+					{
+						printf("\n Error create file '%s'",filename);
+						machine->WriteRegister(2,-1);
+						delete filename;
+						break;
+					}
+					machine->WriteRegister(2,0); // trả về cho chương trình
+					// người dùng thành công
+					delete filename;
+					break;
+				}
 				case SC_Halt:{
 					DEBUG('a',"\nShut down, initialize by user program\n");
 					printf("\nShut down, initialize by user program\n");
@@ -203,24 +244,65 @@ ExceptionHandler(ExceptionType which)
 				}
 				case SC_ReadChar:{
 					printf("Read Char Function\n");
-					// handle this method here
+					char *input = new char[MaxBufferSize + 1];
+					int bytes = gSynchConsole -> Read(input, MaxBufferSize);
+					if(bytes > 1){
+						DEBUG('a',"\nInvalid - Number of characters is more than 1\n");
+						printf("\nInvalid - Number of characters is more than 1\n");
+						machine->WriteRegister(2,0);
+					}
+					else if( bytes == 0){
+						DEBUG('a',"\nInvalid - Input character is empty\n");
+						printf("\nInvalid - Input character is empty\n");
+						machine->WriteRegister(2,0);
+					}
+					else if(bytes == 1){
+						char onechar = *input;
+						machine->WriteRegister(2, onechar);
+					}
+					delete input;
 					break;
 				}
 				case SC_PrintChar:{
 					printf("Print Char Function\n");
-					// handle this method here
-
+					char ch = (char)machine->ReadRegister(4); // Ham ReadRegister tra ve kieu int -> ep kieu thanh char
+					gSynchConsole->Write(&ch, 1);
 					break;
 				}
 				case SC_ReadString:{
 					printf("Read String Function\n");
-					// handle this method here
+					int bufferAddress = machine->ReadRegister(4);
+					int maxlength = machine->ReadRegister(5);
 
+					// Get data from gSynchConsole
+					char *buffer = new char[maxlength + 1]; // +1 for '/0'
+					int bytesRead = gSynchConsole->Read(buffer,maxlength);
+
+					buffer[bytesRead] = '\0';
+
+					if(bytesRead == 0){
+						DEBUG('a',"\nInvalid - The string is empty\n");
+						printf("\nInvalid - The string is empty - \n");
+					}
+					else {
+						int byteCopied = System2User(bufferAddress, bytesRead + 1, buffer);
+						if(byteCopied <= 0){
+							DEBUG('a',"\nFailed - Some errors have been occured when tranfers from system to user\n");
+							printf("\nFailed - Some errors have been occured when tranfers from system to user\n");
+						}
+					}
+
+					delete buffer;
 					break;
 				}
 				case SC_PrintString:{
 					printf("Print String Function\n");
-					// handle this method here
+					int bufferAddress = machine->ReadRegister(4);
+					
+					char *buffer = User2System(bufferAddress,MaxBufferSize);
+
+					int length = strlen(buffer);
+					gSynchConsole->Write(buffer, length + 1);
 
 					break;
 				}
