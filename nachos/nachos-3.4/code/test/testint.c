@@ -1,13 +1,15 @@
 #include "syscall.h"
 #include "copyright.h"
 
+
 int main()
 {
+	PrintString("Nhap so nguyen n: ");
 	int n = ReadInt();
 
-	if(n != 0){
-		PrintInt(n);
-	}
+	PrintString("So nguyen da nhap: ");
+	PrintInt(n);
+	
 
 	Halt();
 }
