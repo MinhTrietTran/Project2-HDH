@@ -8,13 +8,15 @@ int main()
 	int value = 0;
 
 	PrintString("\n---------------In bang ma ASCII---------------\n");
-
-	for(row; row < 8; row++){
+	// Duyet qua tung dong cua bang
+	for(row; row < 8; row++){ 
 		PrintString("Cot ");
 		PrintInt(row);
 		PrintString("  ");
+		// Duyet qua tung cot tren moi dong tuong ung
 		for(col = 0; col < 16; col++){
 			value = row * 16 + col;
+			// Goi system call PrintChar de in gia tri duoi dang ma ascii
 			PrintChar(value);
 			PrintString("  ");
 		}
@@ -23,6 +25,6 @@ int main()
 	
 	PrintString("\n---------------------------------------------");
 	PrintString("\n");
-
+	
 	Halt();
 }
