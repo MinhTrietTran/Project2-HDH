@@ -313,90 +313,61 @@ ExceptionHandler(ExceptionType which)
 
 					break;
 				}
-				
 				case SC_ReadChar:{
-					// Syscall này tương ứng với hàm ReadChar được sử dụng "char ReadChar();"
-					// Khởi tạo 1 bảng các ký tự với số lượng MaxBufferSize + 1. Thêm 1 phần tử phần kết thúc chuỗi
 					char *input = new char[MaxBufferSize + 1];
-
-					 // Lấy dữ liệu từ màn hình vào mảng input và số lượng byte đọc được sẽ được lưu vào biến bytes
 					int bytes = gSynchConsole -> Read(input, MaxBufferSize);
-
-					// Kiểm tra nếu số lượng bytes mà đọc được lớn hơn 1 tức là đã nhập 1 chuỗi
-					// Chỉ chấp nhận 1 byte. 1 byte tương ứng với 1 ký thực char (char = 1 byte)
 					if(bytes > 1){
 						DEBUG('a',"\nInvalid - Number of characters is more than 1\n");
 						printf("\nInvalid - Number of characters is more than 1\n");
 						machine->WriteRegister(2,0);
 					}
-					else if( bytes == 0){ // Loại bõ trường hợp nhập vào empty (Trường hợp người dùng enter)
+					else if( bytes == 0){
 						DEBUG('a',"\nInvalid - Input character is empty\n");
 						printf("\nInvalid - Input character is empty\n");
 						machine->WriteRegister(2,0);
 					}
-					else if(bytes == 1){ // Nếu đúng 1 byte thì tiến hành
-						// Tạo 1 biến char và gán nó chính là giá trị của phần tử đầu tiên của mảng input
+					else if(bytes == 1){
 						char onechar = *input;
-						// Dùng machine( biến con trỏ dạng máy được khai báo toàn cục) để ghi onchar vào thanh ghi số 2
-						// Thanh ghi số 2 là thành ghi trả về
 						machine->WriteRegister(2, onechar);
 					}
-					delete input; // Sau khi thực hiện xong tiến hành lấy lại vùng nhớ cấp phát cho input
+					delete input;
 					break;
 				}
 				case SC_PrintChar:{
-					// Syscall này dùng để in ra màn hình cho syscall ReadChar với định nghĩa hàm "void PrintChar(char value);"
-					// Hàm nhận vào 1 "char value" làm tham số, tiến hành lấy tham số này từ thanh ghi số 4 bằng ReadRegister nhờ vào machine
-					char ch = (char)machine->ReadRegister(4); // Hàm ReadRegister trả về kiểu int -> ép kiểu thành char
-					// Hàm gSynchConsole để tiến hành ghi giá trị ký tự char đọc được ra màn hình Console
+					char ch = (char)machine->ReadRegister(4); // Ham ReadRegister tra ve kieu int -> ep kieu thanh char
 					gSynchConsole->Write(&ch, 1);
 					break;
 				}
 				case SC_ReadString:{
-					// Syscall này tương ứng cho hàm "void ReadString (char* buffer, int length);"
-					// Hàm nhập vào 2 tham số: 1 là 1 con trỏ buffer, và 1 length cho số lượng phần tử
-					
-					// Tiền hành đọc dữ liệu mảng tham số buffer từ thanh ghi số 4
 					int bufferAddress = machine->ReadRegister(4);
-					// Đọc tham số thứ 2 là length từ thanh ghi số 5. Tham số này chính là số lượng phần tử người dùng định nghĩa lớn nhất
 					int maxlength = machine->ReadRegister(5);
 
-					// Tạo 1 mảng buffer để lưu trữ dữ liệu được đọc từ màng hình
+					// Get data from gSynchConsole
 					char *buffer = new char[maxlength + 1]; // +1 for '/0'
-					// bytesRead là số phần tử đọc được thực tế từ việc đọc trong màn hình Console và lưu vào mảng buffer
 					int bytesRead = gSynchConsole->Read(buffer,maxlength);
 
-					// Gán ký hiệu kết thúc cho chuỗi vừa đọc được từ màn hình '\0'
 					buffer[bytesRead] = '\0';
 
-					// Tiến hành kiểm tra: nếu không có byte nào được đọc, thì thông báo cho người dùng chuỗi rỗng
-					// Ngược lại thì tiến hành chuyển đổi dữ liệu đọc được từ system space sang user space
-					// và lưu vào mảng bufferAddress chính là tham số được truyền vào hàm.
 					if(bytesRead == 0){
 						DEBUG('a',"\nInvalid - The string is empty\n");
 						printf("\nInvalid - The string is empty - \n");
 					}
 					else {
-						int byteCopied = System2User(bufferAddress, bytesRead + 1, buffer); // byteCopied chính là số lượng byte 
-															// thực sự được chuyển đổi
+						int byteCopied = System2User(bufferAddress, bytesRead + 1, buffer);
 						if(byteCopied <= 0){
 							DEBUG('a',"\nFailed - Some errors have been occured when tranfers from system to user\n");
 							printf("\nFailed - Some errors have been occured when tranfers from system to user\n");
 						}
 					}
-					// Thu hồi vùng nhớ cho buffer
+
 					delete buffer;
 					break;
 				}
 				case SC_PrintString:{
-					// Syscall này tương ứng với "void PrintString(char* buffer);"
-					// Nhập vào 1 tham số buffer dạng con trỏ char chính là mảng ký tự
-					// Tiến hành lấy dữ liệu tham số buffer từ thanh ghi số 4 ( thanh ghi tham số)
 					int bufferAddress = machine->ReadRegister(4);
-					// Tiến hành chuyển đổi dữ liệu mảng ký tự từ user space to system space vào mảng buffer
+					
 					char *buffer = User2System(bufferAddress,MaxBufferSize);
 
-					// Lấy ra độ dài của mảng buffer và dùng gSynchConsole để ghi vào màn hình console cho người dùng
 					int length = strlen(buffer);
 					gSynchConsole->Write(buffer, length + 1);
 
@@ -407,7 +378,7 @@ ExceptionHandler(ExceptionType which)
 					break;
 				}
 			}
-			IncreatePC(); // Tiến hành tăng thanh ghi PC mỗi khi thực hiện các syscall để tránh bị lặp vô tận
+			IncreatePC();
 		}
 		default:
 			break;

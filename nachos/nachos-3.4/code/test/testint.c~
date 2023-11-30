@@ -4,7 +4,6 @@
 int main()
 {
 	int n = ReadInt();
-
 	if(n != 0){
 		PrintInt(n);
 	}
