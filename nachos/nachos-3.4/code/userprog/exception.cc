@@ -227,26 +227,36 @@ ExceptionHandler(ExceptionType which)
 					interrupt->Halt();
 					break;
 				}
+				// Đoạn mã này xử lý lệnh gọi hệ thống SC_ReadInt, đọc một số nguyên từ đầu vào của bàn điều khiển.
+				// Nó khởi tạo bộ đệm để lưu trữ dữ liệu đầu vào, đọc các ký tự từ bảng điều khiển và chuyển đổi chúng thành số nguyên.
+				// Mã đảm bảo đầu vào là số nguyên hợp lệ và xử lý số âm một cách thích hợp.
+				// Nếu đầu vào hợp lệ, số nguyên được ghi vào thanh ghi 2; nếu không, một thông báo lỗi sẽ được in.
 				case SC_ReadInt:{
-					// Handle this method here
+					// Cấp phát bộ nhớ cho bộ đệm đầu vào
 					char* buffer = new char[MaxBufferSize + 1];
 
+					// Đọc ký tự từ console vào bộ đệm
 					int bytesRead = gSynchConsole->Read(buffer,MaxBufferSize);
 
+					// Null-terminate buffer
 					buffer[bytesRead] = '\0';
 					
+					// Khởi tạo các biến dấu, chỉ mục và kết quả
 					int sign = 1;
 					int i = 0;
 					int result = 0;
 
+					// Gắn cờ để theo dõi tính hợp lệ của đầu vào
 					bool isValid = true;
 
+					// Xử lý bộ đệm đầu vào
 					if(bytesRead > 0){
 						if(buffer[0] == '-'){
 							sign = -1;
 							i++;
 						}
 
+						// Chuyển ký tự thành số nguyên
 						for(; i < bytesRead; i++){
 							if(buffer[i] >= '0' && buffer[i] <= '9'){
 								result = result * 10 + (buffer[i] - '0');
@@ -257,58 +267,76 @@ ExceptionHandler(ExceptionType which)
 							}
 						}
 
+						// Kiểm tra đầu vào một ký tự có dấu âm
 						if(bytesRead == 1){
 							if(sign == -1){
 								isValid = false;
 							}
 						}
+						
+						// Xử lý kết quả dựa trên tính hợp lệ
 						if(isValid == true){
 							result = result * sign;
+							// Viết kết quả vào thanh ghi 2
 							machine->WriteRegister(2,result);
 						}
 						else{
 							DEBUG('a',"\nInvalid - Input is non Integer\n");
+
+							// In thông báo lỗi do đầu vào không hợp lệ
 							printf("\nInvalid - Invalid - Input non Integer\n");
+
+							// Viết 0 để thanh ghi 2 trong trường hợp đầu vào không hợp lệ
 							machine->WriteRegister(2,0);
 						}
 					}
 					else{
+						// In thông báo lỗi khi đầu vào trống
 						DEBUG('a',"\nInvalid - Input is Empty\n");
 						printf("\nInvalid - Invalid - Input is Empty\n");
 					}
 					delete[] buffer;
 					break;
 				}
+				// Đoạn mã này xử lý lệnh gọi hệ thống SC_PrintInt, in một số nguyên ra đầu ra của bàn điều khiển.
+				// Nó đọc số nguyên từ thanh ghi 4, chuyển nó thành bộ đệm ký tự và sau đó ghi nó vào bàn điều khiển.
+				// Số âm được xử lý bằng cách in dấu '-' và chuyển giá trị tuyệt đối thành ký tự.
 				case SC_PrintInt:{
-					int number = machine->ReadRegister(4);
-					char *buffer = new char[MaxBufferSize + 1];
 
+					// Đọc số nguyên từ thanh ghi 4
+					int number = machine->ReadRegister(4);
+					// Cấp phát bộ nhớ cho vùng đệm ký tự
+					char *buffer = new char[MaxBufferSize + 1];
+					// Xử lý số và in ra console
 					if(number == 0){
+						// Print '0' cho số 0
 						gSynchConsole->Write("0", 1);
 					}
 					else{
 						if(number < 0){
 							number = number * -1;
+							// Xử lý số âm bằng cách in dấu '-'
 							gSynchConsole->Write("-", 1);
 						}
-
+						// Tính độ dài của số
 						int length = 0;
 						int temp = number;
 						while(temp > 0){
 							length++;
 							temp /= 10;
 						}
-
+						// Chuyển số thành ký tự và lưu vào bộ đệm
 						for(int i = length - 1; i >= 0; i--){
 							buffer[i] = ((number % 10) + '0');
 							number /= 10;
 						}
-
+						// Null-terminate buffer
 						buffer[length] = '\0';
-
+						// Ghi bộ đệm ra console
 						gSynchConsole->Write(buffer, length + 1);
 
 					}
+					// Giải phóng bộ nhớ đệm
 					delete[] buffer;
 
 					break;

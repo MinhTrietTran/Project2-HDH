@@ -3,11 +3,12 @@
 
 int main()
 {
+	// Đọc số nguyên sử dụng syscall ReadInt()
 	int n = ReadInt();
 
-	if(n != 0){
-		PrintInt(n);
-	}
+	// In số nguyên sử dụng syscall PrintInt()
+	PrintInt(n);
+	
 
 	Halt();
 }
